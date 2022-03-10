@@ -288,27 +288,79 @@ class FSA:
 
     def union(self, fsa) -> FSA:
         """ construct the union of the two FSAs """
-
         # Homework 1: Question 4
-        raise NotImplementedError
+        assert self.R == fsa.R
+        ret = FSA(self.R)
+        for i in self.Q:
+            for a, j, w in self.arcs(i):
+                ret.add_arc(PairState(1, i.idx), a, PairState(1, j.idx), w)
+        for i in fsa.Q:
+            for a, j, w in fsa.arcs(i):
+                ret.add_arc(PairState(2, i.idx), a, PairState(2, j.idx), w)
+        for q, w in self.I:
+            ret.set_I(PairState(1, q.idx), w)
+        for q, w in self.F:
+            ret.set_F(PairState(1, q.idx), w)
+        for q, w in fsa.I:
+            ret.set_I(PairState(2, q.idx), w)
+        for q, w in fsa.F:
+            ret.set_F(PairState(2, q.idx), w)
+        return ret
 
     def concatenate(self, fsa) -> FSA:
         """ construct the concatenation of the two FSAs """
-
         # Homework 1: Question 4
-        raise NotImplementedError
+        assert self.R == fsa.R
+        ret = FSA(self.R)
+        for i in self.Q:
+            for a, j, w in self.arcs(i):
+                ret.add_arc(PairState(1, i.idx), a, PairState(1, j.idx), w)
+        for i in fsa.Q:
+            for a, j, w in fsa.arcs(i):
+                ret.add_arc(PairState(2, i.idx), a, PairState(2, j.idx), w)
+        mid_state = State('*')
+        ret.add_state(mid_state)
+        for q, w in self.I:
+            ret.set_I(PairState(1, q.idx), w)
+        for q, w in self.F:
+            ret.add_arc(PairState(1, q.idx), ε, mid_state, w)
+        for q, w in fsa.I:
+            ret.add_arc(mid_state, ε, PairState(2, q.idx), w)
+        for q, w in fsa.F:
+            ret.set_F(PairState(2, q.idx), w)
+        return ret
 
     def closure(self) -> FSA:
         """ compute the Kleene closure of the FSA """
-
         # Homework 1: Question 4
-        raise NotImplementedError
+        ret = FSA(self.R)
+        initial_state = State('*I')
+        final_state = State('*F')
+        ret.add_state(initial_state)
+        ret.add_state(final_state)
+        ret.set_I(initial_state)
+        ret.set_F(final_state)
+        for i in self.Q:
+            for a, j, w in self.arcs(i):
+                ret.add_arc(i, a, j, w)
+        for q, w in self.I:
+            ret.add_arc(initial_state, ε, q, w)
+        for q, w in self.F:
+            ret.add_arc(q, ε, initial_state, w)
+        ret.add_arc(initial_state, ε, final_state)
+        return ret
 
     def pathsum(self, strategy=Strategy.LEHMANN):
         if self.acyclic:
             strategy = Strategy.VITERBI
         pathsum = Pathsum(self)
         return pathsum.pathsum(strategy)
+
+    def edge_marginals(self) -> dict:
+        """ computes the edge marginals μ(q→q') """
+
+        # Homework 2: Question 2
+        raise NotImplementedError
 
     def intersect(self, fsa):
         """
@@ -671,3 +723,6 @@ if __name__ == '__main__':
     print(fsa.coaccessible())
     fsa = fsa.trim()
     assert fsa.Q == set(State(i) for i in range(1, 7))
+
+    clo = fsa.closure()
+    print(clo.accept('ab'))
