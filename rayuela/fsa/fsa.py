@@ -358,9 +358,17 @@ class FSA:
 
     def edge_marginals(self) -> dict:
         """ computes the edge marginals μ(q→q') """
-
         # Homework 2: Question 2
-        raise NotImplementedError
+        assert self.acyclic
+        ps = Pathsum(self)
+        alpha, beta = ps.viterbi_fwd(), ps.viterbi_bwd()
+
+        res = dd(lambda: dd(lambda: dd(lambda: self.R.zero)))
+        for p in self.Q:
+            for a, q, w in self.arcs(p):
+                res[p][a][q] = alpha[p] * w * beta[q]
+
+        return res
 
     def intersect(self, fsa):
         """

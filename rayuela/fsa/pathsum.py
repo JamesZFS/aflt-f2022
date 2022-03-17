@@ -161,6 +161,7 @@ class Pathsum:
 		return frozendict(α)
 
 	def allpairs_bwd(self, W):
+		pass
 		𝜷 = self.R.chart()
 		W = self.lehmann()
 		for p in self.fsa.Q:
@@ -168,15 +169,32 @@ class Pathsum:
 				𝜷[p] += W[p, q] * self.fsa.ρ[q]
 		return frozendict(𝜷)
 
-	def viterbi_pathsum(self):
+	def viterbi_pathsum(self, forward=False):
 		pathsum = self.R.zero
-		𝜷 = self.viterbi_bwd()
-		for q in self.fsa.Q:
-			pathsum += self.fsa.λ[q] * 𝜷[q]
+		if forward:
+			alpha = self.viterbi_fwd()
+			for q in self.fsa.Q:
+				pathsum += alpha[q] * self.fsa.ρ[q]
+		else:
+			𝜷 = self.viterbi_bwd()
+			for q in self.fsa.Q:
+				pathsum += self.fsa.λ[q] * 𝜷[q]
 		return pathsum
 
 	def viterbi_fwd(self):
-		raise NotImplementedError
+		# Homework 2: Question 2
+		assert self.fsa.acyclic
+		alpha = self.R.chart()
+		# base
+		for q, w in self.fsa.I:
+			alpha[q] = w
+
+		# recursion
+		for p in self.fsa.toposort():
+			for _, q, w, in self.fsa.arcs(p):
+				alpha[q] += alpha[p] * w
+
+		return frozendict(alpha)
 
 	def viterbi_bwd(self):
 		""" The Viterbi algorithm run backwards. """
@@ -193,7 +211,7 @@ class Pathsum:
 		# recursion
 		for p in self.fsa.toposort(rev=True):
 			for _, q, w in self.fsa.arcs(p):
-				𝜷[p] += 𝜷[q] * w
+				𝜷[p] += w * 𝜷[q]
 
 		return frozendict(𝜷)
 
