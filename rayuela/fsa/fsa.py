@@ -422,6 +422,10 @@ class FSA:
 
         return product_fsa
 
+    def intersect_coaccessible(self, fsa):
+        # Homework 2: Question 3
+        return self.reverse().intersect(fsa.reverse()).reverse()
+
     def tikz(self, max_per_row=4):
 
         tikz_string = []
