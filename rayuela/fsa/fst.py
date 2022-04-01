@@ -1,10 +1,11 @@
 from frozendict import frozendict
+from itertools import product
 
 from rayuela.base.semiring import Boolean
 from rayuela.base.symbol import Sym, ε
 
 from rayuela.fsa.fsa import FSA
-from rayuela.fsa.state import State
+from rayuela.fsa.state import State, PairState
 
 
 class FST(FSA):
@@ -41,7 +42,7 @@ class FST(FSA):
 		if not isinstance(i, State): i = State(i)
 		if not isinstance(j, State): j = State(j)
 		if not isinstance(a, Sym): a = Sym(a)
-		if not isinstance(a, Sym): b = Sym(b)
+		if not isinstance(b, Sym): b = Sym(b)
 		if not isinstance(w, self.R): w = self.R(w)
 
 		self.add_states([i, j])
@@ -53,7 +54,7 @@ class FST(FSA):
 		if not isinstance(i, State): i = State(i)
 		if not isinstance(j, State): j = State(j)
 		if not isinstance(a, Sym): a = Sym(a)
-		if not isinstance(a, Sym): b = Sym(b)
+		if not isinstance(b, Sym): b = Sym(b)
 		if not isinstance(w, self.R): w = self.R(w)
 
 		self.add_states([i, j])
@@ -84,9 +85,28 @@ class FST(FSA):
 		raise NotImplementedError
 
 	def top_compose(self, fst):
-		# Homework 3 
-		raise NotImplementedError
+		# Homework 3
+		assert self.R == fst.R
+		composite = FST(self.R)
+
+		stack = [(i1, i2) for (i1, w1), (i2, w2) in product(self.I, fst.I)]
+		visited = set(stack)
+		while len(stack) > 0:
+			(i1, i2) = stack.pop()
+			for ((a, b), j1, w1), ((c, d), j2, w2) in product(self.arcs(i1), fst.arcs(i2)):
+				if b == c:
+					composite.add_arc(PairState(i1, i2), a, d, PairState(j1, j2), w1 * w2)
+					if (j1, j2) not in visited:
+						stack.append((j1, j2))
+						visited.add((j1, j2))
+
+		for q in composite.Q:
+			(i1, i2) = q
+			composite.λ[q] = self.λ[i1] * fst.λ[i2]
+			composite.ρ[q] = self.ρ[i1] * fst.ρ[i2]
+
+		return composite
 
 	def bottom_compose(self, fst):
 		# Homework 3
-		raise NotImplementedError
+		return fst.top_compose(self)

@@ -9,7 +9,7 @@ class State:
 	@property
 	def idx(self):
 		return self._idx
-	
+
 	@property
 	def label(self):
 		return self._label
@@ -55,3 +55,16 @@ class PairState(State):
 
 	def __str__(self):
 		return self.__repr__()
+
+	def __iter__(self):
+		return iter((self.idx[0], self.idx[1]))
+
+
+class MinimizeState:
+	pass
+	# raise NotImplementedError
+
+
+class PowerState:
+	pass
+	# raise NotImplementedError

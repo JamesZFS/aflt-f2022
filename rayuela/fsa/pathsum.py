@@ -6,6 +6,7 @@ from rayuela.base.datastructures import PriorityQueue
 from rayuela.base.semiring import Real
 
 from rayuela.fsa.state import State
+from rayuela.fsa.scc import SCC
 
 class Strategy:
 	VITERBI = 1
@@ -167,7 +168,6 @@ class Pathsum:
 	def allpairs_bwd(self, W):
 		pass
 		𝜷 = self.R.chart()
-		W = self.lehmann()
 		for p in self.fsa.Q:
 			for q in self.fsa.Q:
 				𝜷[p] += W[p, q] * self.fsa.ρ[q]
@@ -268,6 +268,7 @@ class Pathsum:
 				elif p == q and zero:
 					W[p, q] = self.R.one
 				else:
+					raise Exception("fuck")
 					W[p, q] = self.R.zero
 
 		return frozendict(W)
@@ -276,9 +277,69 @@ class Pathsum:
 	def lehmann_fwd(self): return self.allpairs_fwd(self.lehmann())
 	def lehmann_bwd(self): return self.allpairs_bwd(self.lehmann())
 
+	def local_lehmann(self, component: set):
+		N = len(component)
+		I = {}  # state to index
+		for i, q in enumerate(component):
+			I[q] = i
+
+		# Initialization
+		W = self.R.zeros(N, N)
+		for p in self.fsa.Q:
+			for a, q, w in self.fsa.arcs(p):
+				if p in component and q in component:
+					W[I[p], I[q]] += w
+
+		for j in range(N):
+			V = self.R.zeros(N, N)
+			for i in range(N):
+				for k in range(N):
+					# i ➙ j ⇝ j ➙ k
+					V[i, k] = W[i, k] + W[i, j] * W[j, j].star() * W[j, k]
+			W = V
+
+		# Paths of zero length
+		for i in range(N):
+			W[i, i] += self.R.one
+
+		return {(p, q): W[I[p], I[q]] for p in component for q in component}
+
+	def decomposed_lehmann_bwd(self):
+		beta = self.R.chart()
+		# base
+		for q, w in self.fsa.F:
+			beta[q] = w
+
+		scc_decomp = SCC(self.fsa)
+		for scc in scc_decomp.scc():
+			# Run inter-component Viterbi backward algorithm
+			for p in scc:
+				for a, q, w in self.fsa.arcs(p):
+					if q not in scc:
+						beta[p] += w * beta[q]
+
+			# Run in-component Lehmann's algorithm
+			W = self.local_lehmann(scc)
+
+			# Run in-component Viterbi backward algorithm
+			gamma = self.R.chart()
+			for p in scc:
+				for q in scc:
+					gamma[p] += W[p, q] * beta[q]
+			for q in scc:
+				beta[q] = gamma[q]
+
+		return beta
+
 	def decomposed_lehmann_pathsum(self):
 		# Homework 3: Question 4
-		raise NotImplementedError
+		beta = self.decomposed_lehmann_bwd()
+
+		pathsum = self.R.zero
+		for q in self.fsa.Q:
+			pathsum += self.fsa.λ[q] * beta[q]
+
+		return pathsum
 
 	def bellmanford_pathsum(self):
 		pathsum = self.R.zero
