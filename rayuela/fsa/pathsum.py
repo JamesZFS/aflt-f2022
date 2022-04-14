@@ -168,6 +168,7 @@ class Pathsum:
 	def allpairs_bwd(self, W):
 		pass
 		𝜷 = self.R.chart()
+		W = self.lehmann()
 		for p in self.fsa.Q:
 			for q in self.fsa.Q:
 				𝜷[p] += W[p, q] * self.fsa.ρ[q]
@@ -227,7 +228,32 @@ class Pathsum:
 	def dijkstra_fwd(self, I=None):
 		""" Dijkstra's algorithm without early stopping. """
 
-		raise NotImplementedError
+		assert self.fsa.R.superior
+
+		# initialization
+		α = self.R.chart()
+		agenda = PriorityQueue(R=self.fsa.R)
+		popped = set([])
+
+		# base case
+		if I is None:
+			for q, w in self.fsa.I:
+				agenda.push(q, w)
+		else:
+			for q in I:
+				agenda.push(q, self.R.one)
+
+		# main loop
+		while agenda:
+			i, v = agenda.pop()
+			popped.add(i)
+			α[i] += v
+
+			for _, j, w in self.fsa.arcs(i):
+				if j not in popped:
+					agenda.push(j, v * w)
+
+		return α
 
 	def _lehmann(self, zero=True):
 		"""
@@ -268,7 +294,6 @@ class Pathsum:
 				elif p == q and zero:
 					W[p, q] = self.R.one
 				else:
-					raise Exception("fuck")
 					W[p, q] = self.R.zero
 
 		return frozendict(W)
