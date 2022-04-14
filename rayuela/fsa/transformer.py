@@ -9,10 +9,11 @@ from rayuela.fsa.pathsum import Pathsum, Strategy
 
 
 class Transformer:
-
+    @staticmethod
     def trim(fsa):
         raise NotImplementedError
 
+    @staticmethod
     def powerarcs(fsa, powerstate):
         """
         This helper method group outgoing arcs for determinization.
@@ -32,12 +33,15 @@ class Transformer:
 
             yield sym, PowerState([t for (_, _, t, _) in arcs], weights), sym2sum[sym]
 
+    @staticmethod
     def push(fsa):
         raise NotImplementedError
 
+    @staticmethod
     def _push(fsa, V):
         raise NotImplementedError
 
+    @staticmethod
     def _eps_partition(fsa):
         """ partition fsa into two (one with eps arcs and one with all others) """
 
@@ -57,6 +61,7 @@ class Transformer:
 
         return N, E
 
+    @staticmethod
     def epsremoval(fsa):
 
         # note that N keeps same initial and final weights

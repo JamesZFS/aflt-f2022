@@ -336,7 +336,7 @@ class Pathsum:
 			beta[q] = w
 
 		scc_decomp = SCC(self.fsa)
-		for scc in scc_decomp.scc():
+		for scc in reversed(scc_decomp.scc()):
 			# Run inter-component Viterbi backward algorithm
 			for p in scc:
 				for a, q, w in self.fsa.arcs(p):

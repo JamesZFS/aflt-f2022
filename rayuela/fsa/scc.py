@@ -2,7 +2,6 @@ class SCC:
 
     def __init__(self, fsa):
         self.fsa = fsa
-        self.Q = fsa.Q
 
     def scc(self):
         """
@@ -11,8 +10,7 @@ class SCC:
 
         Guarantees SCCs come back in topological order.
         """
-        for scc in self._kosaraju():
-            yield scc
+        return self._kosaraju()
 
     def _kosaraju(self):
         """
@@ -32,7 +30,7 @@ class SCC:
                 dfs(v)
             stack.append(u)
 
-        for q in self.Q:
+        for q in self.fsa.Q:
             dfs(q)
 
         component = {}  # state to its component
@@ -56,7 +54,7 @@ class SCC:
         # toposort on sccs
         G = {c: [] for c in sccs.keys()}  # adjacency graph of components
         in_deg = {c: 0 for c in sccs.keys()}
-        for u in self.Q:
+        for u in self.fsa.Q:
             for a, v, w in self.fsa.arcs(u):
                 cu, cv = component[u], component[v]
                 if cu != cv:
@@ -73,4 +71,4 @@ class SCC:
                 if in_deg[cv] == 0:
                     stack.append(cv)
 
-        return reversed(result)
+        return result
