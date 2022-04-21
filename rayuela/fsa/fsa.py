@@ -9,7 +9,7 @@ from rayuela.base.semiring import Boolean, String, ProductSemiring
 from rayuela.base.misc import epsilon_filter
 from rayuela.base.symbol import Sym, ε, ε_1, ε_2
 
-from rayuela.fsa.state import State, PairState
+from rayuela.fsa.state import State, PairState, PowerState
 from rayuela.fsa.pathsum import Pathsum, Strategy
 
 class FSA:
@@ -128,7 +128,7 @@ class FSA:
 		fsa = FSA(R=self.R)
 		for i, x in enumerate(list(string)):
 			fsa.add_arc(State(i), Sym(x), State(i+1), self.R.one)
-		
+
 		fsa.set_I(State(0), self.R.one)
 		fsa.add_F(State(len(string)), self.R.one)
 
@@ -155,9 +155,47 @@ class FSA:
 
 		return F
 
+	def power_arcs(self, Q: PowerState):
+		for p, rp in Q:
+			for a, q, w in self.arcs(p):
+				yield p, rp, a, q, w
+
 	def determinize(self, strategy=None):
 		# Homework 4: Question 4
-		raise NotImplementedError
+		det = self.spawn()
+		QI = PowerState(dict(self.I))
+		det.set_I(QI)
+		stack = [QI]
+
+		while len(stack) > 0:
+			Q = stack.pop()
+			# print("stack top:", Q)
+			symbols = set(a for p, r, a, q, w in self.power_arcs(Q))
+			# print("symbols:", symbols)
+			for a in symbols:
+				wp = self.R.zero
+				for p, rp, b, q, w in self.power_arcs(Q):
+					if b == a:
+						wp += rp * w
+				# New power state:
+				rmap = dd(lambda: self.R.zero)
+				for p, rp, b, q, w in self.power_arcs(Q):
+					if b == a:
+						rmap[q] += rp * w / wp
+				# print(f"\t{dict(rmap)}")
+				QP = PowerState(rmap)
+				is_new_state = QP not in det.Q
+				det.add_arc(Q, a, QP, wp)
+				if is_new_state:
+					# Final?
+					rho_QP = self.R.zero
+					for q, rq in QP:
+						rho_QP += rq * self.ρ[q]
+					det.ρ[QP] = rho_QP
+
+					stack.append(QP)
+
+		return det
 
 	def minimize(self, strategy=None):
 		# Homework 5: Question 3
@@ -393,7 +431,7 @@ class FSA:
 		product_fsa = FSA(R=self.R)
 		for (q1, w1), (q2, w2) in product(self.I, fsa.I):
 			product_fsa.add_I(PairState(q1, q2), w=w1 * w2)
-		
+
 		self_initials = {q: w for q, w in self.I}
 		fsa_initials = {q: w for q, w in fsa.I}
 
@@ -715,44 +753,16 @@ class FSA:
 
 
 if __name__ == '__main__':
-	fsa = FSA(Boolean)
+	from rayuela.base.semiring import Tropical
+	fsa = FSA(Tropical)
+	fsa.set_I(State(0))
+	fsa.add_arc(State(0), Sym('a'), State(1), Tropical(1))
+	fsa.add_arc(State(0), Sym('a'), State(2), Tropical(2))
+	fsa.add_arc(State(1), Sym('b'), State(1), Tropical(3))
+	fsa.add_arc(State(2), Sym('b'), State(2), Tropical(3))
+	fsa.add_arc(State(1), Sym('c'), State(3), Tropical(5))
+	fsa.add_arc(State(2), Sym('d'), State(3), Tropical(6))
+	fsa.set_F(State(3))
 
-	# We can directly add edges between the states without adding the states first.
-	# The states will be created automatically.
-	fsa.add_arc(State(1), Sym('a'), State(2))
-	fsa.add_arc(State(1), Sym('b'), State(3))
-
-	fsa.add_arc(State(2), Sym('b'), State(2))
-	fsa.add_arc(State(2), Sym('c'), State(4))
-
-	fsa.add_arc(State(3), Sym('c'), State(4))
-	fsa.add_arc(State(3), Sym('b'), State(5))
-
-	fsa.add_arc(State(4), Sym('a'), State(6))
-	fsa.add_arc(State(5), Sym('a'), State(6))
-
-	# Add initial and final states
-	fsa.set_I(State(1))
-	fsa.set_F(State(6))
-
-	assert fsa.deterministic
-	assert fsa.pushed
-
-	fsa.add_arc(1, 'a', 3)
-	assert not fsa.deterministic
-	assert fsa.pushed
-
-	fsa.add_state(7)
-	assert not fsa.pushed
-
-	fsa.add_arc(State(9), Sym('a'), State(9))
-	fsa.add_arc(State(6), Sym('a'), State(7))
-	fsa.add_arc(State(2), Sym('a'), State(8))
-	fsa.add_arc(State(10), Sym('a'), State(1))
-	print(fsa.accessible())
-	print(fsa.coaccessible())
-	fsa = fsa.trim()
-	assert fsa.Q == set(State(i) for i in range(1, 7))
-
-	clo = fsa.closure()
-	print(clo.accept('ab'))
+	det = fsa.determinize()
+	assert fsa.pathsum() == det.pathsum()
