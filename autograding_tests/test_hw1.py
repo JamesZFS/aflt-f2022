@@ -3,21 +3,14 @@ import pickle
 from rayuela.base.semiring import Tropical, Real
 from rayuela.fsa.state import PairState, State
 from rayuela.base.symbol import Sym, ε
-import numpy as np
+from rayuela.base.misc import compare_fsas
 
 
 # TODO: 
 # - More examples
 # - Edge cases
 # - Extend random machines to other semirings
-def is_pathsum_positive(fsa: FSA):
-    return fsa.pathsum() > Real(0)
 
-def compare_fsas(fsa1: FSA, fsa2: FSA) -> bool:
-    if is_pathsum_positive(fsa1) and is_pathsum_positive(fsa2):
-        return np.allclose(float(fsa1.pathsum()), float(fsa2.pathsum()), atol=1e-3)
-    # Skip non-convergent pathsums
-    return True
 
 
 pickles_path = "autograding_tests/pickles"
@@ -361,7 +354,7 @@ def test_reverse():
         reversed_fsas = pickle.load(f)
     
     for fsa, rfsa in zip(fsas, reversed_fsas):
-        assert True == compare_fsas(fsa.reverse(), rfsa)
+        assert True == compare_fsas(rfsa, fsa.reverse())
 
 ##########################
 ##### Testing accessible & coaccessible algorithms
@@ -446,7 +439,7 @@ def test_union():
     
     middle = int(len(fsas)/2)
     for left_fsa, right_fsa, union_fsa in zip(fsas[:middle], fsas[middle:], union_fsas):
-        assert compare_fsas(left_fsa.union(right_fsa),union_fsa)
+        assert compare_fsas(union_fsa, left_fsa.union(right_fsa))
 
 
 def test_union_example():
@@ -500,7 +493,7 @@ def test_concatenate():
     
     middle = int(len(fsas)/2)
     for left_fsa, right_fsa, concat_fsa in zip(fsas[:middle], fsas[middle:], concat_fsas):
-        assert compare_fsas(left_fsa.concatenate(right_fsa), concat_fsa)
+        assert compare_fsas(concat_fsa, left_fsa.concatenate(right_fsa))
 
 def test_concatenate_example():
     CONCAT = FSA(Real)
@@ -553,7 +546,7 @@ def test_closure():
         kleene_fsas = pickle.load(f)
     
     for fsa, kleene in zip(fsas, kleene_fsas):
-        assert compare_fsas(fsa.kleene_closure(), kleene)
+        assert compare_fsas(kleene, fsa.kleene_closure())
 
 def test_closure_example():
     KLEENE = FSA(Real)
@@ -579,8 +572,6 @@ def test_closure_example():
 
     KLEENE.set_I(State(4), w=Real(1.0))
     KLEENE.add_F(State(5), w=Real(1.0))
-
-    KLEENE
 
     kleene = FSA1.kleene_closure()
     assert compare_fsas(KLEENE,kleene)

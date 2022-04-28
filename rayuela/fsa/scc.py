@@ -12,7 +12,7 @@ class SCC:
         """
         return self._kosaraju()
 
-    def _kosaraju(self):
+    def _kosaraju(self) -> "list[frozenset]":
         """
         Kosaraju's algorithm [https://en.wikipedia.org/wiki/Kosaraju%27s_algorithm]
         Runs in O(E + V) time.

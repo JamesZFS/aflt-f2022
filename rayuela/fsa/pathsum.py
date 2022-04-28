@@ -1,9 +1,10 @@
+from collections import defaultdict
 import numpy as np
 from numpy import linalg as LA
 from frozendict import frozendict
 
 from rayuela.base.datastructures import PriorityQueue
-from rayuela.base.semiring import Real
+from rayuela.base.semiring import Real, Semiring
 
 from rayuela.fsa.state import State
 from rayuela.fsa.scc import SCC
@@ -186,7 +187,7 @@ class Pathsum:
 				pathsum += self.fsa.λ[q] * 𝜷[q]
 		return pathsum
 
-	def viterbi_fwd(self):
+	def viterbi_fwd(self) -> "defaultdict[State, Semiring]":
 		# Homework 2: Question 2
 		assert self.fsa.acyclic
 		alpha = self.R.chart()
@@ -201,8 +202,8 @@ class Pathsum:
 
 		return frozendict(alpha)
 
-	def viterbi_bwd(self):
-		""" The Viterbi algorithm run backwards. """
+	def viterbi_bwd(self) -> "defaultdict[State, Semiring]":
+		""" The Viterbi algorithm run backwards"""
 
 		assert self.fsa.acyclic
 
@@ -218,7 +219,7 @@ class Pathsum:
 			for _, q, w in self.fsa.arcs(p):
 				𝜷[p] += w * 𝜷[q]
 
-		return frozendict(𝜷)
+		return 𝜷
 
 	def dijkstra_early(self):
 		""" Dijkstra's algorithm with early stopping."""
@@ -356,7 +357,7 @@ class Pathsum:
 
 		return beta
 
-	def decomposed_lehmann_pathsum(self):
+	def decomposed_lehmann_pathsum(self) -> Semiring:
 		# Homework 3: Question 4
 		beta = self.decomposed_lehmann_bwd()
 
@@ -366,22 +367,22 @@ class Pathsum:
 
 		return pathsum
 
-	def bellmanford_pathsum(self):
+	def bellmanford_pathsum(self) -> Semiring:
 		pathsum = self.R.zero
 		𝜷 = self.bellmanford_bwd()
 		for q in self.fsa.Q:
 			pathsum += self.fsa.λ[q] * 𝜷[q]
 		return pathsum
 
-	def bellmanford_fwd(self):
+	def bellmanford_fwd(self) -> frozendict[State, Semiring]:
 		raise NotImplementedError
 
 
-	def bellmanford_bwd(self):
+	def bellmanford_bwd(self) -> frozendict[State, Semiring]:
 		raise NotImplementedError
 
 
-	def johnson(self):
+	def johnson(self) -> "defaultdict[(State,State), Semiring]":
 		raise NotImplementedError
 
 	def johnson_pathsum(self): return self.allpairs_pathsum(self.johnson())

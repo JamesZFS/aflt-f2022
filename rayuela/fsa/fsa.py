@@ -5,7 +5,7 @@ from itertools import product
 
 from frozendict import frozendict
 
-from rayuela.base.semiring import Boolean, String, ProductSemiring
+from rayuela.base.semiring import Boolean, Real, Semiring, String, ProductSemiring
 from rayuela.base.misc import epsilon_filter
 from rayuela.base.symbol import Sym, ε, ε_1, ε_2
 
@@ -52,6 +52,8 @@ class FSA:
 		self.ρ = R.chart()
 
 	def add_state(self, q):
+		if not isinstance(q, State):
+			q = State(q)
 		self.Q.add(q)
 
 	def add_states(self, Q):
@@ -61,8 +63,6 @@ class FSA:
 	def add_arc(self, i, a, j, w=None):
 		if w is None: w = self.R.one
 
-		if not isinstance(i, State): i = State(i)
-		if not isinstance(j, State): j = State(j)
 		if not isinstance(a, Sym): a = Sym(a)
 		if not isinstance(w, self.R): w = self.R(w)
 
@@ -160,7 +160,7 @@ class FSA:
 			for a, q, w in self.arcs(p):
 				yield p, rp, a, q, w
 
-	def determinize(self, strategy=None):
+	def determinize(self) -> FSA:
 		# Homework 4: Question 4
 		det = self.spawn()
 		QI = PowerState(dict(self.I))
@@ -197,7 +197,7 @@ class FSA:
 
 		return det
 
-	def minimize(self, strategy=None):
+	def minimize(self, strategy=None) -> FSA:
 		# Homework 5: Question 3
 		raise NotImplementedError
 
@@ -405,7 +405,7 @@ class FSA:
 		pathsum = Pathsum(self)
 		return pathsum.pathsum(strategy)
 
-	def edge_marginals(self) -> dict:
+	def edge_marginals(self) -> dd[dd[dd[Semiring]]]:
 		""" computes the edge marginals μ(q→q') """
 		# Homework 2: Question 2
 		assert self.acyclic
@@ -471,13 +471,13 @@ class FSA:
 
 		return product_fsa
 
-	def topologically_equivalent(self, fsa):
-		""" Tests topological equivalence. """
+	def equivalent(self, fsa) -> bool:
+		""" Tests equivalence. """
 
 		# Homework 5: Question 4
 		raise NotImplementedError
 
-	def intersect_coaccessible(self, fsa):
+	def intersect_coaccessible(self, fsa) -> FSA:
 		# Homework 2: Question 3
 		return self.reverse().intersect(fsa.reverse()).reverse()
 
