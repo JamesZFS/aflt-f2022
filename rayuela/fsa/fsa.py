@@ -390,13 +390,11 @@ class FSA:
 				ret.add_arc(i, a, j, w)
 		for q, w in self.I:
 			ret.add_arc(initial_state, ε, q, w)
-			for p, _ in self.F:
-				ret.add_arc(q, ε, p)
 		for q, w in self.F:
 			ret.add_arc(q, ε, final_state, w)
 			for p, _ in self.I:
 				ret.add_arc(q, ε, p)
-		ret.add_arc(final_state, ε, initial_state)
+		ret.add_arc(initial_state, ε, final_state)
 		return ret
 
 	def pathsum(self, strategy=Strategy.LEHMANN):

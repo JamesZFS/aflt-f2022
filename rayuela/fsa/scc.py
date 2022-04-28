@@ -65,7 +65,7 @@ class SCC:
         result = []
         while len(stack) > 0:
             cu = stack.pop()
-            result.append(sccs[cu])
+            result.append(frozenset(sccs[cu]))
             for cv in G[cu]:
                 in_deg[cv] -= 1
                 if in_deg[cv] == 0:
