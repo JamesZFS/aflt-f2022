@@ -403,6 +403,16 @@ class FSA:
 		pathsum = Pathsum(self)
 		return pathsum.pathsum(strategy)
 
+	def forward(self, strategy=Strategy.LEHMANN):
+		if self.acyclic:
+			strategy = Strategy.VITERBI
+		return Pathsum(self).forward(strategy)
+
+	def backward(self, strategy=Strategy.LEHMANN):
+		if self.acyclic:
+			strategy = Strategy.VITERBI
+		return Pathsum(self).backward(strategy)
+
 	def edge_marginals(self) -> dd[dd[dd[Semiring]]]:
 		""" computes the edge marginals μ(q→q') """
 		# Homework 2: Question 2
@@ -760,7 +770,16 @@ if __name__ == '__main__':
 	fsa.add_arc(State(2), Sym('b'), State(2), Tropical(3))
 	fsa.add_arc(State(1), Sym('c'), State(3), Tropical(5))
 	fsa.add_arc(State(2), Sym('d'), State(3), Tropical(6))
+	fsa.add_arc(State(2), Sym('d'), State(1), Tropical(-2))
+	# fsa.add_arc(State(3), Sym('d'), State(0), Tropical(-6))
 	fsa.set_F(State(3))
+	ps = Pathsum(fsa)
+	print(dict(ps.dijkstra_fwd()), '\n', dict(ps.bellmanford_fwd()))
 
-	det = fsa.determinize()
-	assert fsa.pathsum() == det.pathsum()
+	lps = fsa.pathsum(Strategy.LEHMANN)
+	jps = fsa.pathsum(Strategy.JOHNSON)
+	print(lps, jps)
+	assert lps == jps
+
+	# det = fsa.determinize()
+	# assert fsa.pathsum() == det.pathsum()

@@ -5,6 +5,7 @@ from frozendict import frozendict
 
 from rayuela.base.datastructures import PriorityQueue
 from rayuela.base.semiring import Real, Semiring
+from rayuela.fsa.push import push_with_potential
 
 from rayuela.fsa.state import State
 from rayuela.fsa.scc import SCC
@@ -90,7 +91,7 @@ class Pathsum:
 			raise NotImplementedError
 
 	def forward(self, strategy):
-		
+
 		if strategy == Strategy.DIJKSTRA:
 			assert self.R.superior, "Dijkstra's requires a superior semiring"
 			return self.dijkstra_fwd()
@@ -145,7 +146,7 @@ class Pathsum:
 
 		elif strategy == Strategy.LEHMANN:
 			return self.lehmann()
-		
+
 		elif strategy == Strategy.FIXPOINT:
 			raise self.fixpoint()
 
@@ -200,7 +201,7 @@ class Pathsum:
 			for _, q, w, in self.fsa.arcs(p):
 				alpha[q] += alpha[p] * w
 
-		return frozendict(alpha)
+		return alpha
 
 	def viterbi_bwd(self) -> "defaultdict[State, Semiring]":
 		""" The Viterbi algorithm run backwards"""
@@ -374,16 +375,65 @@ class Pathsum:
 			pathsum += self.fsa.λ[q] * 𝜷[q]
 		return pathsum
 
-	def bellmanford_fwd(self) -> "frozendict[State, Semiring]":
-		raise NotImplementedError
+	def bellmanford_fwd(self, I=None) -> "frozendict[State, Semiring]":
+		alpha = self.R.chart()  # distance from source
+		# base case
+		if I is None:
+			for q, w in self.fsa.I:
+				alpha[q] = w
+		else:
+			for q in I:
+				alpha[q] = self.R.one
+		# Relax edges N-1 times
+		for i in range(self.N - 1):
+			for p in self.fsa.Q:
+				for a, q, w in self.fsa.arcs(p):
+					alpha[q] += alpha[p] * w
+		# Check negative-cycle
+		for p in self.fsa.Q:
+			for a, q, w in self.fsa.arcs(p):
+				if alpha[q] + alpha[p] * w != alpha[q]:
+					raise AttributeError("Graph contains a negative-weight cycle")
 
+		return frozendict(alpha)
 
-	def bellmanford_bwd(self) -> "frozendict[State, Semiring]":
-		raise NotImplementedError
+	def bellmanford_bwd(self, F=None) -> "frozendict[State, Semiring]":
+		beta = self.R.chart()  # distance from source
+		# base case
+		if F is None:
+			for q, w in self.fsa.F:
+				beta[q] = w
+		else:
+			for q in F:
+				beta[q] = self.R.one
+		# Relax edges N-1 times
+		for i in range(self.N - 1):
+			for p in self.fsa.Q:
+				for a, q, w in self.fsa.arcs(p):
+					beta[p] += w * beta[q]
+		# Check negative-cycle
+		for p in self.fsa.Q:
+			for a, q, w in self.fsa.arcs(p):
+				if beta[p] + w * beta[q] != beta[p]:
+					raise AttributeError("Graph contains a negative-weight cycle")
+
+		return frozendict(beta)
 
 
 	def johnson(self) -> "defaultdict[(State,State), Semiring]":
-		raise NotImplementedError
+		# 1
+		alpha = self.bellmanford_fwd(I=[q for q, w in self.fsa.I])
+		# 2
+		V = {q: ~w for q, w in alpha.items()}
+		pfsa = push_with_potential(self.fsa, V, False)
+		ps = Pathsum(pfsa)
+		# 3
+		W = self.R.chart()
+		for p in self.fsa.Q:
+			d = ps.dijkstra_fwd(I=[p])
+			for q, w in d.items():
+				W[p, q] = ~alpha[p] * w * alpha[q]
+		return W
 
 	def johnson_pathsum(self): return self.allpairs_pathsum(self.johnson())
 	def johnson_fwd(self): return self.allpairs_fwd(self.johnson())

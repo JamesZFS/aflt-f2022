@@ -1,4 +1,5 @@
 import json
+import frozendict
 
 
 class State:
@@ -113,11 +114,6 @@ class PairState(State):
 
     def __iter__(self):
         return iter((self.idx[0], self.idx[1]))
-
-
-class MinimizeState:
-    pass
-    # raise NotImplementedError
 
 
 class PowerState(State):
