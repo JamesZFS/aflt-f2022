@@ -12,6 +12,7 @@ from rayuela.base.semiring import Boolean, Semiring, String, ProductSemiring
 from rayuela.base.symbol import Sym, ε, ε_1, ε_2
 from rayuela.fsa.pathsum import Pathsum, Strategy
 from rayuela.fsa.state import State, PairState, PowerState
+from rayuela.fsa.transformer import Transformer
 
 
 class FSA:
@@ -157,11 +158,6 @@ class FSA:
 
 		return F
 
-	def power_arcs(self, Q: PowerState):
-		for p, rp in Q:
-			for a, q, w in self.arcs(p):
-				yield p, rp, a, q, w
-
 	def determinize(self) -> FSA:
 		# Homework 4: Question 4
 		det = self.spawn()
@@ -171,30 +167,13 @@ class FSA:
 
 		while len(stack) > 0:
 			Q = stack.pop()
-			# print("stack top:", Q)
-			symbols = set(a for p, r, a, q, w in self.power_arcs(Q))
-			# print("symbols:", symbols)
-			for a in symbols:
-				wp = self.R.zero
-				for p, rp, b, q, w in self.power_arcs(Q):
-					if b == a:
-						wp += rp * w
+			for a, QP, wp in Transformer.powerarcs(self, Q):
 				# New power state:
-				rmap = dd(lambda: self.R.zero)
-				for p, rp, b, q, w in self.power_arcs(Q):
-					if b == a:
-						rmap[q] += rp * w / wp
-				# print(f"\t{dict(rmap)}")
-				QP = PowerState(rmap)
 				is_new_state = QP not in det.Q
 				det.add_arc(Q, a, QP, wp)
 				if is_new_state:
 					# Final?
-					rho_QP = self.R.zero
-					for q, rq in QP:
-						rho_QP += rq * self.ρ[q]
-					det.ρ[QP] = rho_QP
-
+					det.ρ[QP] = sum([rq * self.ρ[q] for q, rq in QP.residuals.items()], start=self.R.zero)
 					stack.append(QP)
 
 		return det

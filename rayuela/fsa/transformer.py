@@ -15,7 +15,7 @@ class Transformer:
         raise NotImplementedError
 
     @staticmethod
-    def _powerarcs(fsa, Q):
+    def powerarcs(fsa, Q):
         """ This helper method group outgoing arcs for determinization. """
 
         symbol2arcs, unnormalized_residuals = dd(set), fsa.R.chart()
