@@ -1,16 +1,18 @@
 from __future__ import annotations
+
 import copy
 from collections import defaultdict as dd, deque
 from itertools import product
 
 from frozendict import frozendict
 
-from rayuela.base.semiring import Boolean, Real, Semiring, String, ProductSemiring
 from rayuela.base.misc import epsilon_filter
+from rayuela.base.partitions import PartitionRefinement
+from rayuela.base.semiring import Boolean, Semiring, String, ProductSemiring
 from rayuela.base.symbol import Sym, ε, ε_1, ε_2
-
-from rayuela.fsa.state import State, PairState, PowerState
 from rayuela.fsa.pathsum import Pathsum, Strategy
+from rayuela.fsa.state import State, PairState, PowerState
+
 
 class FSA:
 
@@ -199,7 +201,42 @@ class FSA:
 
 	def minimize(self, strategy=None) -> FSA:
 		# Homework 5: Question 3
-		raise NotImplementedError
+		assert self.deterministic
+
+		P = {frozenset(q for q in self.Q if self.ρ[q] != self.R.zero),
+			 frozenset(q for q in self.Q if self.ρ[q] == self.R.zero)}
+		for a in self.Sigma:
+			fa = {}
+			for p in self.Q:
+				for b, q, w in self.arcs(p):
+					if b == a:
+						fa[p] = q
+						break
+				else:
+					raise NotImplementedError
+			P = PartitionRefinement(fa, self.Q).hopcroft(P)
+
+		return self.block_fsa_construction(P)
+
+	def block_fsa_construction(self, P) -> FSA:
+		fsa = self.spawn()
+		mu = {}
+		for Q in P:
+			for q in Q:
+				mu[q] = Q
+
+		for Q in P:
+			for p in Q:
+				for a, q, w in self.arcs(p):
+					fsa.add_arc(mu[p], a, mu[q], w)
+
+		for q, w in self.I:
+			fsa.λ[mu[q]] += w
+
+		for q, w in self.F:
+			fsa.ρ[mu[q]] += w
+
+		return fsa
 
 	def dfs(self):
 		""" Depth-first search (Cormen et al. 2019; Section 22.3) """
