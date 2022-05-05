@@ -157,6 +157,9 @@ class FSA:
 				F.set_F(q, w)
 
 		return F
+	
+	def push(self):
+		return Transformer.push(self)
 
 	def determinize(self) -> FSA:
 		# Homework 4: Question 4
