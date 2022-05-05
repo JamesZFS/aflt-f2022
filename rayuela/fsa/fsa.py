@@ -11,7 +11,7 @@ from rayuela.base.partitions import PartitionRefinement
 from rayuela.base.semiring import Boolean, Semiring, String, ProductSemiring
 from rayuela.base.symbol import Sym, ε, ε_1, ε_2
 from rayuela.fsa.pathsum import Pathsum, Strategy
-from rayuela.fsa.state import State, PairState, PowerState
+from rayuela.fsa.state import State, PairState, PowerState, MinimizeState
 from rayuela.fsa.transformer import Transformer
 
 
@@ -205,7 +205,7 @@ class FSA:
 		mu = {}
 		for Q in P:
 			for q in Q:
-				mu[q] = Q
+				mu[q] = MinimizeState(Q)
 
 		for Q in P:
 			for p in Q:
