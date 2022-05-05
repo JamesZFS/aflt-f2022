@@ -409,10 +409,10 @@ class FSA:
 				ret.add_arc(i, a, j, w)
 		for q, w in self.I:
 			ret.add_arc(initial_state, ε, q, w)
-		for q, w in self.F:
-			ret.add_arc(q, ε, final_state, w)
-			for p, _ in self.I:
-				ret.add_arc(q, ε, p)
+		for q, wf in self.F:
+			ret.add_arc(q, ε, final_state, wf)
+			for p, wi in self.I:
+				ret.add_arc(q, ε, p, wf * wi)
 		ret.add_arc(initial_state, ε, final_state)
 		return ret
 
@@ -504,7 +504,7 @@ class FSA:
 		# Homework 5: Question 4
 		raise NotImplementedError
 
-	def intersect_coaccessible(self, fsa) -> FSA:
+	def coaccessible_intersection(self, fsa) -> FSA:
 		# Homework 2: Question 3
 		return self.reverse().intersect(fsa.reverse()).reverse()
 
