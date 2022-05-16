@@ -70,9 +70,7 @@ FSA2.add_F(State(2), w=Real(0.062))
 def test_deterministic():
     with open(f"{hw_path}/deterministic_results.pkl", 'rb') as f:
         deterministic_results = pickle.load(f)
-    with open(f"{hw_path}/deterministic_fsas.pkl", 'rb') as f:
-        dfsas = pickle.load(f)
-    for fsa, result in zip(dfsas, deterministic_results):
+    for fsa, result in zip(fsas, deterministic_results):
         assert fsa.deterministic == result
 
 
@@ -312,7 +310,22 @@ def test_pushed_example_2():
 
 def test_reverse_string():
     # TODO: show that for any string x∈Σ∗ accepted by the original automaton, ←−xis accepted by its reversal
-    pass
+    T1 = FSA(Real)
+
+    T1.add_arc(State(0), Sym('a'), State(1))
+
+    T1.add_arc(State(1), Sym('b'), State(2))
+    T1.add_arc(State(1), Sym('c'), State(3))
+    T1.add_arc(State(2), Sym('a'), State(4))
+    T1.add_arc(State(3), Sym('d'), State(4))
+    T1.add_arc(State(4), Sym('e'), State(4))
+
+    T1.set_I(State(0))
+    T1.set_F(State(4))
+
+    reversed_T1 = T1.reverse()
+
+    assert T1.accept("abae") == reversed_T1.accept("eaba")
 
 def test_reverse_example():
 
