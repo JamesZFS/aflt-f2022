@@ -118,7 +118,30 @@ class Transformer:
 
     def nullaryremove(self, cfg) -> CFG:
         # Assignment 6
-        raise NotImplementedError
+        cfg_null = cfg.spawn()
+        for (X, body), w in cfg.P:
+            assert len(body) == 1 or len(body) == 2
+            if len(body) == 2 or (len(body) == 1 and body[0] == ε):
+                cfg_null.add(w, X, *body)
+
+        ts_null = Treesum(cfg_null).table()
+
+        cfg_new = cfg.spawn()
+        for p, w in cfg.P:
+            (X, body) = p
+            if len(body) == 2:
+                Y, Z = body
+                # X_null -> Y_null Z_null
+                cfg_new.add(w * ts_null[Z], X, Y)  # X_notnull -> Y_notnull Z_null
+                cfg_new.add(w * ts_null[Y], X, Z)  # X_notnull -> Y_null Z_notnull
+                cfg_new.add(w, X, Y, Z)  # X_notnull -> Y_notnull Z_notnull
+            else:
+                x = body[0]
+                if x != ε:
+                    cfg_new.add(w, X, x)
+        cfg_new.add(ts_null[S], S, ε)
+
+        return cfg_new
 
     def separate_terminals(self, cfg) -> CFG:
         # Assignment 7
@@ -128,3 +151,27 @@ class Transformer:
         # Assignment 7
         raise NotImplementedError
 
+if __name__ == '__main__':
+    cfg = CFG(Real)
+    X = NT("X")
+    Y = NT("Y")
+    Z = NT("Z")
+    x = Sym("x")
+    y = Sym("y")
+    cfg.add(Real(2), S, X, Y)
+    cfg.add(Real(0.5), S, ε)
+    cfg.add(Real(0.33), X, X, Z)
+    cfg.add(Real(1), X, x)
+    cfg.add(Real(3), X, ε)
+    cfg.add(Real(2), Y, y)
+    cfg.add(Real(4), Y, ε)
+    cfg.add(Real(2), Z, y)
+    # cfg.add(Real(2), Z, ε)
+
+    print(cfg)
+    print(cfg.treesum())
+    ncfg = Transformer().nullaryremove(cfg)
+
+    print(ncfg)
+    print(ncfg.treesum())
+    assert ncfg.treesum() == cfg.treesum()
