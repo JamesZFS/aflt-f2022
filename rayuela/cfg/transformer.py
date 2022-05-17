@@ -1,16 +1,14 @@
 import itertools as it
+import math
 from itertools import chain, combinations
 
-from rayuela.base.semiring import Boolean, Real, Derivation
+from rayuela.base.semiring import Boolean, Real
 from rayuela.base.symbol import Sym, ε
-
-from rayuela.fsa.state import State
+from rayuela.cfg.cfg import CFG
+from rayuela.cfg.nonterminal import NT, S
+from rayuela.cfg.treesum import Treesum
 from rayuela.fsa.pathsum import Pathsum
 
-from rayuela.cfg.nonterminal import NT, S, Slash, Other
-from rayuela.cfg.production import Production
-from rayuela.cfg.cfg import CFG
-from rayuela.cfg.treesum import Treesum
 
 def unary(p):
     # X → Y
@@ -18,12 +16,14 @@ def unary(p):
         return True
     return False
 
+
 def preterminal(p):
     # X → a
     (head, body) = p
     if len(body) == 1 and isinstance(p.body[0], Sym):
         return True
     return False
+
 
 def binarized(p):
     # X → Y Z
@@ -36,7 +36,7 @@ def binarized(p):
 def powerset(iterable):
     "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
     s = list(iterable)
-    return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
+    return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
 
 
 class Transformer:
@@ -68,7 +68,7 @@ class Transformer:
         for (i, j) in I:
             head = self._gen_nt()
             heads.append(head)
-            body = p.body[i:j+1]
+            body = p.body[i:j + 1]
             P.append(((head, body), cfg.R.one))
 
         # new "head" production
@@ -76,7 +76,7 @@ class Transformer:
         start = 0
         for (end, n), head in zip(I, heads):
             body += p.body[start:end] + (head,)
-            start = n+1
+            start = n + 1
         body += p.body[start:]
         P.append(((p.head, body), w))
 
@@ -113,22 +113,45 @@ class Transformer:
         return ncfg.trim()
 
     def unaryremove(self, cfg) -> CFG:
-        # Assignment 6
-        raise NotImplementedError
+        # Assignment 6: Question 4
+        cfg.make_unary_fsa()
+
+        W = Pathsum(cfg.unary_fsa).lehmann()
+        W = {(p.idx, q.idx): v for (p, q), v in W.items()}  # (NT, NT) -> w
+
+        cfg_new = cfg.spawn()
+        for (head, body), w in cfg.P:
+            if len(body) > 1:
+                # Enumerate combinations of non-terminals in the body
+                nt_indices = [ind for ind, X in enumerate(body) if isinstance(X, NT)]
+                Xs = [X for X in body if isinstance(X, NT)]  # original non-terminal
+
+                for Ys in it.product(*[cfg.V] * len(nt_indices)):  # target non-terminal
+                    w_new = w * math.prod([W[Y, X] for Y, X in zip(Ys, Xs)], start=cfg.R.one)
+                    if w_new != cfg.R.zero:
+                        body_new = list(body)
+                        for ind, Y in zip(nt_indices, Ys):
+                            body_new[ind] = Y
+                        cfg_new.add(w_new, head, *body_new)
+
+            elif isinstance(body[0], Sym):
+                cfg_new.add(w, head, *body)
+            # else: unary rules
+
+        return cfg_new
 
     def nullaryremove(self, cfg) -> CFG:
-        # Assignment 6
+        # Assignment 6: Question 3
         cfg_null = cfg.spawn()
-        for (X, body), w in cfg.P:
+        for (head, body), w in cfg.P:
             assert len(body) == 1 or len(body) == 2
             if len(body) == 2 or (len(body) == 1 and body[0] == ε):
-                cfg_null.add(w, X, *body)
+                cfg_null.add(w, head, *body)
 
         ts_null = Treesum(cfg_null).table()
 
         cfg_new = cfg.spawn()
-        for p, w in cfg.P:
-            (X, body) = p
+        for (X, body), w in cfg.P:
             if len(body) == 2:
                 Y, Z = body
                 # X_null -> Y_null Z_null
@@ -151,7 +174,10 @@ class Transformer:
         # Assignment 7
         raise NotImplementedError
 
+
 if __name__ == '__main__':
+    transformer = Transformer()
+    print('Test nullaryremove')
     cfg = CFG(Real)
     X = NT("X")
     Y = NT("Y")
@@ -170,8 +196,35 @@ if __name__ == '__main__':
 
     print(cfg)
     print(cfg.treesum())
-    ncfg = Transformer().nullaryremove(cfg)
+    ncfg = transformer.nullaryremove(cfg)
 
     print(ncfg)
     print(ncfg.treesum())
     assert ncfg.treesum() == cfg.treesum()
+
+    cfg = CFG(Real)
+    X = NT("X")
+    Y = NT("Y")
+    A = NT("A")
+    B = NT("B")
+    a = Sym('a')
+    b = Sym('b')
+    cfg.add(Real(1), S, X, Y)
+    cfg.add(Real(1), X, A)
+    cfg.add(Real(3), Y, B)
+    cfg.add(Real(1), A, a)
+    cfg.add(Real(1/3), A, X)
+    cfg.add(Real(1), B, b)
+    cfg.add(Real(1), B, ε)
+    cfg.add(Real(1), X, a)
+    cfg.add(Real(1), Y, b)
+    cfg.add(Real(0.5), Y, Y)
+    print('Test unaryremove')
+    print(cfg)
+    print(cfg.treesum())
+
+    ucfg = transformer.unaryremove(cfg)
+
+    print(ucfg)
+    print(ucfg.treesum())
+    assert ucfg.treesum() == cfg.treesum()
