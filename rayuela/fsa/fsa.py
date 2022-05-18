@@ -195,7 +195,8 @@ class FSA:
 						fa[p] = q
 						break
 				else:
-					raise NotImplementedError
+					fa[p] = None
+					# raise NotImplementedError
 			P = PartitionRefinement(fa, self.Q).hopcroft(P)
 
 		return self.block_fsa_construction(P)
