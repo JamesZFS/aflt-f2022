@@ -7,6 +7,7 @@ from rayuela.base.symbol import Sym, ε
 from rayuela.cfg.cfg import CFG
 from rayuela.cfg.nonterminal import NT, S
 from rayuela.cfg.treesum import Treesum
+from rayuela.cfg.misc import *
 from rayuela.fsa.pathsum import Pathsum
 
 

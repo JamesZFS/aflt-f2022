@@ -35,7 +35,24 @@ class Transformer:
     def push(fsa):
         from rayuela.fsa.pathsum import Strategy
         W = Pathsum(fsa).backward(Strategy.LEHMANN)
-        return push_with_potential(fsa, W)
+        pfsa = Transformer._push(fsa, W)
+        assert pfsa.pushed # sanity check
+        return pfsa
+
+    def _push(fsa, V):
+        """
+        Mohri (2001)'s weight pushing algorithm. See Eqs 1, 2, 3.
+        Link: https://www.isca-speech.org/archive_v0/archive_papers/eurospeech_2001/e01_1603.pdf.
+        """
+
+        pfsa = fsa.spawn()
+        for i in fsa.Q:
+            pfsa.set_I(i, fsa.λ[i] * V[i])
+            pfsa.set_F(i, ~V[i] * fsa.ρ[i])
+            for a, j, w in fsa.arcs(i):
+                pfsa.add_arc(i, a, j, ~V[i] * w * V[j])
+
+        return pfsa
 
     @staticmethod
     def _eps_partition(fsa):

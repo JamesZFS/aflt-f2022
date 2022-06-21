@@ -381,10 +381,10 @@ class Rational(Semiring):
         if self is self.one: return other
         if other is self.zero: return self.zero
         if self is self.zero: return self.zero
-        return Real(self.score * other.score)
+        return Rational(self.score * other.score)
 
     def __invert__(self):
-        return Rational(1.0/self.score)
+        return Rational(1/self.score)
 
     def __truediv__(self, other):
         return Rational(self.score / other.score)
