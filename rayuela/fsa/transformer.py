@@ -6,16 +6,14 @@ from frozendict import frozendict
 from rayuela.base.symbol import ε
 from rayuela.fsa.state import MinimizeState, PowerState
 from rayuela.fsa.pathsum import Pathsum, Strategy
-from rayuela.fsa.push import push_with_potential
 
 
 class Transformer:
-    @staticmethod
+
     def trim(fsa):
         raise NotImplementedError
 
-    @staticmethod
-    def powerarcs(fsa, Q):
+    def _powerarcs(fsa, Q):
         """ This helper method group outgoing arcs for determinization. """
 
         symbol2arcs, unnormalized_residuals = dd(set), fsa.R.chart()
@@ -31,7 +29,6 @@ class Transformer:
 
             yield a, PowerState(residuals), normalizer
 
-    @staticmethod
     def push(fsa):
         from rayuela.fsa.pathsum import Strategy
         W = Pathsum(fsa).backward(Strategy.LEHMANN)
@@ -54,7 +51,6 @@ class Transformer:
 
         return pfsa
 
-    @staticmethod
     def _eps_partition(fsa):
         """ partition fsa into two (one with eps arcs and one with all others) """
 
@@ -74,7 +70,6 @@ class Transformer:
 
         return N, E
 
-    @staticmethod
     def epsremoval(fsa):
 
         # note that N keeps same initial and final weights
