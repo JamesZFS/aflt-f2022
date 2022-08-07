@@ -12,9 +12,7 @@ class PartitionRefinement:
 
 		# compute the pre-image of f
 		self.finv = dd(lambda : set([]))
-		for n in Q:
-			if self.f[n] is not None:
-				self.finv[self.f[n]].add(n)
+		for n in Q: self.finv[self.f[n]].add(n)
 
 	def stable(self, P):
 
@@ -27,7 +25,6 @@ class PartitionRefinement:
 		for B in P:
 			for p in B:
 				for q in B:
-					if self.f[p] is None or self.f[q] is None: continue
 					if D[self.f[p]] != D[self.f[q]]:
 						return False
 		return True
